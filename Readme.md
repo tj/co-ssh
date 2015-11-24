@@ -33,6 +33,20 @@ co(function *() {
 ...
 ```
 
+### Example using plain-text authentication
+Simply replace `key` option with `password`
+
+```js
+...
+var c = ssh({
+  host: 'n.n.n.n',
+  user: 'myuser',
+  password: 'mypass'
+});
+...
+
+```
+
 # License
 
   MIT
