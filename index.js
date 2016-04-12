@@ -91,6 +91,7 @@ Connection.prototype.exec = function(cmd){
       stream.setEncoding(this.encoding);
       stream.on('data', function(c){ buf.push(c) });
       stream.on('end', function(){ resolve(buf.join('')) });
+      stream.stderr.on('data', function(data) { reject(data + '') });
     });
   });
 };
