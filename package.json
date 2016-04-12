@@ -9,12 +9,12 @@
     "generators"
   ],
   "dependencies": {
-    "ssh2": "~0.2.14"
+    "ssh2": "~0.4.12"
   },
   "devDependencies": {
     "mocha": "*",
     "should": "*",
-    "co": "~3.0.0"
+    "co": "~4.6.0"
   },
   "license": "MIT"
 }

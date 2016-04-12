@@ -30,9 +30,10 @@ function Connection(opts) {
  * Connect with `opts`.
  *
  * - `host`
- * - `port`
+ * - `port` defaults to 22
  * - `user`
- * - `key`
+ * - `key` for private-key or `password` for plain-text
+ * - `encoding` defaults to 'ascii' (a bit faster than 'utf8' if you sure you don't need to handle fancy chars)
  *
  * @param {Object} opts
  * @return {Function}
@@ -45,19 +46,30 @@ Connection.prototype.connect = function(opts){
 
   // default port
   opts.port = opts.port || 22;
+  
+  // default encoding
+  this.encoding = opts.encoding || 'ascii'
 
   // required
   assert(opts.host, '.host required');
   assert(opts.user, '.user required');
-  assert(opts.key, '.key required');
-  opts.privateKey = opts.key;
+  assert(opts.key || opts.password, '.key or .password required');
+  
   opts.username = opts.user;
-
-  return function(done){
-    ssh.connect(opts);
-    ssh.once('ready', done);
-    ssh.once('error', done);
+  
+  if (opts.key) {
+    opts.privateKey = opts.key;
   }
+  else if (opts.password) {
+    opts.tryKeyboard = true;
+  }
+
+  return new Promise(function(resolve, reject) {
+    ssh.connect(opts);
+    ssh.once('keyboard-interactive', function() { arguments[4]([opts.password]) });
+    ssh.once('ready', resolve);
+    ssh.once('error', reject);
+  });
 };
 
 /**
@@ -70,15 +82,18 @@ Connection.prototype.connect = function(opts){
 
 Connection.prototype.exec = function(cmd){
   var ssh = this.ssh;
-  return function(done){
+
+  return new Promise(function(resolve, reject) {
     ssh.exec(cmd, function(err, stream){
-      if (err) return done(err);
-      var buf = '';
-      stream.setEncoding('utf8');
-      stream.on('data', function(c){ buf += c });
-      stream.on('end', function(){ done(null, buf) });
+      if (err) return reject(err);
+      
+      var buf = [];
+      stream.setEncoding(this.encoding);
+      stream.on('data', function(c){ buf.push(c) });
+      stream.on('end', function(){ resolve(buf.join('')) });
+      stream.stderr.on('data', function(data) { reject(data + '') });
     });
-  }
+  });
 };
 
 /**
